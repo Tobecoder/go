@@ -110,9 +110,14 @@ func main() {
 		}
 	})
 
+	http.HandleFunc("/lesson/", lessonHandler)
+
 	// 监听静态文件
 	static := http.FileServer(http.Dir(root))
 	http.Handle("/static/", static)
+	http.Handle("/content/img/", static)
+	imgDir := filepath.Join(root, "static", "img")
+	http.Handle("/favicon.ico", http.FileServer(http.Dir(imgDir)))
 
 	//监听socket
 	origin := &url.URL{Scheme: "http", Host: httpAddr}
@@ -145,4 +150,16 @@ func environ() (env []string) {
 	}
 	env = append(env, "GOPATH="+gopath)
 	return
+}
+
+// lessonHandler handler the HTTP requests for lessons.
+func lessonHandler(w http.ResponseWriter, r *http.Request) {
+	lesson := strings.TrimPrefix(r.URL.Path, "/lesson/")
+	if err := writeLesson(lesson, w); err != nil {
+		if err == lessonNotFound {
+			http.NotFound(w, r)
+		} else {
+			log.Println(err)
+		}
+	}
 }
